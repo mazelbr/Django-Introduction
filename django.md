@@ -171,3 +171,100 @@ from django.shortcuts import rener_to_response
 def hello(request):
     return render_to_response('tempname.html', {'var1': val1})
 ```
+### The locals() trick
+One propably can imaging that you will create a lot of variables within each view that we then pass to the respond_to_render method. Especially in more complex applications the numer of local variables can grow quite quckly which we would than have to pass manually. But there is a more efficient way to do that since `locals()` just includes ALL locally definded variables. This can be a cute shortcut but keep in mind that in eventually would also pass sensitive information to the template.
+
+## Subdirectories
+Of course you can further specify the file path in get_template() e.g.g `get_template('dir/hello.html')` This allows you to seperate views for different models and you can a consistent scheeme for CRUD actions similar to Rails
+
+## Inheritance of Tempaltes
+In real world applications the overall structure of the site hardly changes but rather some section are updated and filled with data. Therefore it comes in handy if you can e.g. define the Nav-bar elsewhere and load at the top of each side. So if you change the navbar you can do it in one place and not in all subpages. In the same way you can try do reuce redundancy for all pages.
+One could create an `includes` directory to store all the global pages. Django the provides an include tag `{% include "includes/nav.html" %}` to load e.g. the navbar.
+
+An even better approach is the so called template inheritance, where you define one global scheme in e.g. `base.html` and then specify differences in child themes that inheriate from the base theme through blocks.
+lets consider the following base.html
+```
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+    <title>{% block title %}{% endblock %}</title>
+</head>
+<body>
+    <h1>My helpful timestamp site</h1>
+    {% block content %}{% endblock %}
+    {% block footer %}
+    <hr>
+    <p>Thanks for visiting my site.</p>
+    {% endblock %}
+</body>
+</html>
+```
+This base theme specifies all the things that all child themes have in common. For all the differences its the child theme's job to implement them.
+This means:
+```
+{% extends "base.html" %}
+
+{% block title %}The current time{% endblock %}
+
+{% block content %}
+<p>It is now {{ current_date }}.</p>
+{% endblock %}
+```
+That we can specify all the block ins the child theme
+> Note that the block names within one template should be unique as they are identifiers in both directions.
+
+>Note further that you do not have to specify all blocks of the parent theme. If defined django used then the same block of the parent as a fallback or if not does it fails silently
+
+Some more guidelines are:
+* {% extends %} has to be the first tag
+* The more tags defined in the parent theme the better
+* if you need a tag from the parent you can use {{block.super}}
+
+# MVC vs MTV
+Similarly to the model view controller django has a Model, Template, View structure where:
+* Model: The model handels everything about the data, the access, the validation, the retrival and the relationships
+* The Templates are the presentation layer. Here all presentation related decsions are contained and how it is represented
+* The Views handle all the business logic. It connects the database with the templates
+
+Views in django are similar to the controler layer in rails
+
+## Configuring the Database
+Depending on the backend you choose the process is slightly different and can be optained from the docs of ddjango and the database connector. Then we have to set the configurations inside the `settings.py` file in the database section
+
+> Note that if you are using SQLight you do not further configure the database. Django by default sets up a SQLight db for you
+
+## Your first app
+This might be confusing but now you have to add an app to your project. By now you only have created a project that can contain several apps. Lateron you would seperate big websites in apps for e.g. onlinesshop, payment etc. Technically the only requirement for the project is to contain a setting.py file
+
+An App is a portable set of django functionalities with its own moels and views
+Note that apps not necessary. You could also use the rounting part of django only.
+
+1. Start a new app `python manage.py startapp appname` creates a app inside the project directory it contains of 
+```
+books/
+    __init__.py
+    admin.py
+    views.py
+    models.py
+    apps.py
+    tests.py
+```
+
+## Your first model
+> Note that the way to create models changed a bit in newer versions for django and the way provoced in the book does not work anymore.
+
+first of all we have to create the Models as classes inside the `model.py ` file
+```python
+class Publisher(models.Model):
+    name = models.CharField(max_length=30)
+    adress = models.CharField(max_length=50)
+    city = models.CharField(max_length=60)
+
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    authors = models.ManyToManyField(Author)
+    publisher = models.ForeignKey(Publisher, on_delete=models.CASCADE)
+```
+The attributes are created by predefined field types. Those refere directly to SQL statements and there are additional contraints available. You can also link databases but you have to define the `on_delete` attribute
+
+We then have to ens
